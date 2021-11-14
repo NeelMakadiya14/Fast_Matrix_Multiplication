@@ -4,6 +4,9 @@
 #include<time.h>
 #include<math.h>
 #include <stdbool.h>
+#include <sys/resource.h>
+#include <errno.h>
+#include <unistd.h>
 
 #define MAX 10
 #define MIN 1
@@ -25,12 +28,27 @@ int num_digits(ll num){
 //This function return the multiplication string(char array)
 //Returns a*b
 char *multiply(char s1[], char s2[]){
-	int a[200],b[200];
-    int ans[400]={0};
+	//int a[200],b[200];
+    
     int i,j,tmp;
     
     int l1 = strlen(s1);
     int l2 = strlen(s2);
+
+//    printf("m 1\n");
+    int *ans = (int *)malloc((l1+l2)*sizeof(int));
+//    printf("m 2\n");
+    int *a = (int *)malloc((l1)*sizeof(int));
+//    printf("m 3\n");
+    int *b = (int *)malloc((l2)*sizeof(int));
+//   printf("m 4\n");
+
+    for(int i=0; i<l1+l2; i++){
+        ans[i] = 0;
+    }
+
+    //int ans[l1+l2]={0};
+
     for(i = l1-1,j=0;i>=0;i--,j++)
     {
         a[j] = s1[i]-'0';
@@ -57,13 +75,20 @@ char *multiply(char s1[], char s2[]){
         if(ans[i] > 0)
             break;
     }
-    char *mul=(char *)malloc(200*sizeof(char));
+    char *mul=(char *)malloc((l1+l2)*sizeof(char));
+//    printf("m 5\n");
     int index =0;
     for(;i >= 0;i--)
     {
     	mul[index++] = ans[i] + '0';
     }
+//    printf("m 6\n");
     mul[index] = '\0';
+//    printf("m 7\n");
+ //   free(ans);
+    free(a);
+    free(b);
+//    printf("m 8\n");
     return mul;
 }
 
@@ -97,7 +122,7 @@ static void MM_Integer(int *a, int *b, int *c, int n){
     char * temp_a[n];
     char * temp_b[n];
 
-    //Now we are calculating the following mathematical product using sting because number is too large to stor in long long int 
+    //Now we are calculating the following mathematical product using sting because number is too large to store in long long int 
     // for(i=0 to n-1) => for(j=0 to n-1)=> temp_a[i] += ((int)a[i*n+j])*1ll*pow(10,(n-1-j)*P); 
     //There is a pattern in above product so, we are using that pattern
     int starting=0;
@@ -190,32 +215,44 @@ static void MM_Integer(int *a, int *b, int *c, int n){
     //     printf("%s  ",temp_b[i]);
     // }
     // printf("\n");
-
-    char temp1[300],temp2[300];
+    
+//    printf("milestone 1\n");
+    char temp1[(n+1)*P],temp2[(n+1)*P];
     char *temp;
     char *ans;
     char *end;
     int char_len;
-
+//    printf("milestone 2\n");
     
     for(int i=0; i<n; i++){
         for(int j=0; j<n; j++){
             // c[i*n+j] = ( (temp_a[i]*temp_b[j])/(pow(10,(n-1)*P)) ) % ((ll)pow(10,P))
             // again number is too big hence we used user defined multiplication algo to multiply two big number as char array
+        //    printf("milestone 3\n");
             sprintf(temp1, "%s", temp_a[i]);
             sprintf(temp2, "%s", temp_b[j]);
+        //    printf("milestone 4\n");
             temp = multiply(temp1,temp2);
+        //    printf("milestone 5\n");
             // printf("mul = %s \n",temp);
             char_len = strlen(temp);
+        //    printf("milestone 6\n");
             // printf("%d   %d\n",char_len-n*P,P);
             ans = (temp+(char_len-n*P));
+        //    printf("milestone 7\n");
             ans[P] = '\0';
+        //    printf("milestone 8\n");
             // printf("anwser = %s \n",ans);
 
             //finally converting the char* into the interger number and storing into the answer matrix.
             c[i*n+j] = strtol(ans, &end, 10);
+        //    printf("milestone 9\n");
+
+            free(temp);
         }
     }
+
+    return;
 }
 
 //School book method of MM.
@@ -239,9 +276,10 @@ int main()
     int n;
 
     int *a,*b,*c,*c1;
+    struct rusage r_usage;
 
     //Genereting the different size images and applying the compute algorithm
-    for(int n=2;n<=20;n++){
+    for(int n=113;n<=113;n++){
         // n=(1<<i);
         //Allocating space for matrix a,b,c
         a = (int *)malloc(n*n*sizeof(int));
@@ -312,9 +350,20 @@ int main()
         runTime = (runTime + (end.tv_nsec - start.tv_nsec)) * 1e-9; 
         printf("Size = %d,  RunTime = %lf\n",n,runTime);
 
+        int ret = getrusage(RUSAGE_SELF,&r_usage);
+        if(ret == 0)
+            printf("Memory usage: %ld kilobytes\n",r_usage.ru_maxrss);
+        else
+            printf("Error in getrusage. errno = %d\n", errno);
+
         free(a);
         free(b);
         free(c);
+        free(c1);
+
+        
     }
+
+    
     return 0;
 }
